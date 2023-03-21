@@ -63,6 +63,7 @@ app.get("/products", function(req, res){
 		if(err) res.status(404).send(err);
 		else {
 			let dataArray = JSON.parse(data);
+			console.log(dataArray);
 			res.send(dataArray.products);
 		}
 	});
@@ -150,15 +151,26 @@ app.get("/purchases", function(req, res) {
 	let sort = req.query.sort;
 	let arr1 = data.purchases;
 	let productsArr = [];
+	let prArr = [];
+	console.log(product);
 	if(product){
 		productsArr = product.split(",");
 	}
 
 	if(shop) {
-		arr1 = arr1.filter((a) => Number(a.shopId) === Number(shop));
+		let shopjson = data.shops.find((val) => val.name === shop);
+		arr1 = arr1.filter((a) => Number(a.shopId) === Number(shopjson.shopId));
 	}
 	if(productsArr.length > 0) {
-		arr1 = arr1.filter((a) => productsArr.find((val) => Number(val) === Number(a.productid)));
+		console.log(productsArr);
+		for(let i=0; i < productsArr.length; i++) {
+			let prname = productsArr[i];
+			let prjson = data.products.find((val) => val.productName === prname);
+			let id = prjson.productId;
+			prArr.push(id);
+		}
+		console.log(prArr);
+		arr1 = arr1.filter((a) => prArr.find((val) => Number(val) === Number(a.productid)));
 	}
 	if(sort) {
 		arr1 = (sort === "QtyAsc") ? arr1.sort((a1, a2) => a1.quantity - a2.quantity) :
@@ -167,10 +179,18 @@ app.get("/purchases", function(req, res) {
 		(sort === "ValueDesc") ? arr1.sort((a1, a2) => (a2.price*a2.quantity) - (a1.price*a1.quantity)) :
 		arr1;
 	}
-	let arr2 = {...data};
+	fs.readFile(fname, "utf8", function(err, data){
+		if(err) res.status(404).send(err);
+		else {
+			let dataArray = JSON.parse(data);
+			dataArray.filtPurchase = arr1;
+			res.send(dataArray);
+		}
+	});
+	/*let arr2 = {...data};
 	arr2.filtPurchase = arr1;
-	console.log(arr2.filtPurchase);
-	res.send(arr2);
+	console.log(arr2);
+	res.send(arr2);*/
 });
 
 app.get("/totalPurchase/shop/:id", function(req, res){
